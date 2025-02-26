@@ -1,21 +1,16 @@
 import { userAuth } from "../library/authentication";
 import { Userdb } from "./../model/Users";
 import express from "express";
-import {
-  checkEmailValidation,
-  loginVaidation,
-  registerValidation,
-  resetPasswordValidation,
-  verifyOtpValidation,
-} from "../library/validations";
+import Joi from "joi";
 import { fileHandler } from "../library/ImageUpload";
+import { functions } from "../library/function";
 
 const router = express.Router();
 
 router.get("/getAllUsers", getAllUsers);
 router.get("/getSingleUser", userAuth, getSingleUsers);
 
-router.delete("/deleteUsers/:id", deleteUsers);
+router.delete("/deleteUsers/:id", deleteUser);
 
 router.post("/checkUser", checkEmailValidation, checkUserByEmail);
 router.post("/register", registerValidation, register);
@@ -32,6 +27,7 @@ router.post("/resetPassword", userAuth, resetPasswordValidation, resetPassword);
 router.put("/updateProfile/:id", fileHandler, userAuth, updateProfile);
 
 // -------------------------- get currently loged in users ---------------------------------
+let functionObj = new functions();
 
 async function getSingleUsers(req: any, res: any) {
   try {
@@ -45,11 +41,45 @@ async function getSingleUsers(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
 // ------------------------------ register --------------------------------------------
+
+
+function registerValidation(req: any, res: any, next: any) {
+  const schema = Joi.object({
+    u_name: Joi.string().trim().replace(/'/g, "''").required(),
+    u_email: Joi.string().email().replace(/'/g, "''").trim().exist().required(),
+    u_password: Joi.string()
+      .trim()
+      .replace(/'/g, "''")
+      .min(6)
+      .max(30)
+      .pattern(/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+      .required()
+      .messages({
+        "string.pattern.base":
+          "Password must have at least 1 uppercase letter, 1 number, and 1 special character.",
+        "string.min": "Password must be at least 6 characters long.",
+      }),
+    u_mobile: Joi.string()
+      .trim()
+      .pattern(/^\d{10}$/)
+      .required()
+      .messages({
+        "string.pattern.base": "Mobile number must be exactly 10 digits.",
+      }),
+  });
+
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+  req.body = value;
+  next();
+}
 
 async function register(req: any, res: any, next: any) {
   try {
@@ -70,11 +100,31 @@ async function register(req: any, res: any, next: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
 // ---------------------------------- login ------------------------------------------
+
+function loginVaidation(req: any, res: any, next: any) {
+  const schema = Joi.object({
+    u_email: Joi.string().email().trim().replace(/'/g, "''").exist().required(),
+    u_password: Joi.string()
+      .trim()
+      .replace(/'/g, "''")
+      .min(6)
+      .max(30)
+      .required(),
+  });
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+  req.body = value;
+  next();
+}
+
+
 async function login(req: any, res: any) {
   try {
     const { u_email, u_password } = req.body;
@@ -95,11 +145,23 @@ async function login(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
 // ---------------------------------- check uer exist or not ---------------------------------------
+function checkEmailValidation(req: any, res: any, next: any) {
+  const schema = Joi.object({
+    u_email: Joi.string().trim().replace(/'/g, "''").email().exist().required(),
+  });
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+  req.body = value;
+  next();
+}
+
 
 async function checkUserByEmail(req: any, res: any) {
   try {
@@ -111,8 +173,8 @@ async function checkUserByEmail(req: any, res: any) {
     return res
       .status(result.status_code)
       .json({ status: result.status, message: result.status_message });
-  } catch (err) {
-    res.status(500).json({ message: "Internal server error...", error: err });
+  } catch (error) {
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -121,14 +183,10 @@ async function checkUserByEmail(req: any, res: any) {
 async function getAllUsers(req: any, res: any) {
   try {
     const userObj = new Userdb();
-    let result: any = await userObj.getallUsers();
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Internal server error...", error: err });
+    let result: any = await userObj.allRecords();
+    return functionObj.output(201, 1, "get success..", result);
+  } catch (error) {
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -146,7 +204,7 @@ async function verifyOtp(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -170,26 +228,22 @@ async function resendOTP(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
 // --------------------------------- delete by id ----------------------------------------------
 
-async function deleteUsers(req: any, res: any) {
+async function deleteUser(req: any, res: any) {
   try {
     const userID = req.params.id;
     let userObj = new Userdb();
 
-    let result = await userObj.deleteUsers(userID);
+    let result = await userObj.deleteRecord(userID);
 
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    return functionObj.output(201, 1, "delete success..", result);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -212,7 +266,9 @@ async function logout(req: any, res: any) {
         .status(500)
         .json({ message: "Internal server error...", error: error });
     }
-  } catch (error) {}
+  } catch (error) {
+    return functionObj.output(500, 0, "Internal server error", error);
+  }
 }
 
 // ----------------------------------- forgot password --------------------------------------------------
@@ -227,17 +283,42 @@ async function forgotPassword(req: any, res: any) {
       .status(result2.status_code)
       .json({ status: result2.status, message: result2.status_message });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
 // ------------------------------------ reset password -------------------------------------------------
 
+function resetPasswordValidation(req: any, res: any, next: any) {
+  const schema = Joi.object({
+    u_email: Joi.string().trim().replace(/'/g, "''").email().exist().required(),
+    u_password: Joi.string()
+      .trim()
+      .replace(/'/g, "''")
+      .min(6)
+      .max(30)
+      .pattern(/^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
+      .required()
+      .messages({
+        "string.pattern.base":
+          "Password must have at least 1 uppercase letter, 1 number, and 1 special character.",
+        "string.min": "Password must be at least 6 characters long.",
+      }),
+  });
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+  req.body = value;
+  next();
+}
+
+
 async function resetPassword(req: any, res: any) {
   try {
-    const { u_email, u_password } = req.body;
+    const { id, u_password } = req.body;
     const dbObj = new Userdb();
-    let result: any = await dbObj.resetPassword(u_email, u_password);
+    let result: any = await dbObj.resetPassword(id, u_password);
 
     return res.status(result.status_code).json({
       status: result.status,
@@ -245,7 +326,7 @@ async function resetPassword(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -270,7 +351,7 @@ async function updateProfile(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 

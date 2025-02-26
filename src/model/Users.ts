@@ -3,7 +3,6 @@ import { Token } from "../library/Token";
 import { appdb } from "./appdb";
 import { sendMail } from "../library/sendMail";
 import bcrypt from "bcrypt";
-import { registerValidation } from "../library/validations";
 
 export class Userdb extends appdb {
   constructor() {
@@ -37,32 +36,13 @@ export class Userdb extends appdb {
     }
   }
 
-  // ------------------------------------ get all users details ------------------------------------
-  async getallUsers() {
-    let exist: any[] = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-    var functionObj = new functions();
-    return functionObj.output(201, 1, "get success", exist);
-  }
-
   // ------------------------------- get currently loged in users ---------------------------
 
   async getSingleUsers(id: number) {
     let functionObj = new functions();
 
     this.where = "where id =" + id;
-    let result: any[] = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
+    let result: any[] = await this.selectRecord(id, "*");
     return functionObj.output(201, 1, "Get Users..", result);
   }
 
@@ -89,38 +69,37 @@ export class Userdb extends appdb {
 
     if (exist.length > 0) {
       return functionObj.output(400, 0, "User already exist...");
-    } else {
-      const salt = await bcrypt.genSalt(10);
-      const hasedPassword = await bcrypt.hash(u_password, salt);
-
-      const u_otp = await this.generateOtp(100000, 999999);
-
-      const data: any = {
-        u_name,
-        u_email,
-        u_password: hasedPassword,
-        u_mobile,
-        u_ipaddress: ip,
-      };
-      let result = await this.insertRecord(data);
-
-      let wh1 = "where u_email ilike '" + u_email + "'";
-      let res2: any[] = await this.update(this.table, { u_otp: u_otp }, wh1);
-
-      await sendMail(
-        u_email,
-        "OTP for Registration",
-        `<p>Welcome !! Your OTP for verification is -</p>
-        <h1>${u_otp}</h1> `
-      );
-
-      return functionObj.output(
-        200,
-        1,
-        "Register success & otp send success",
-        result
-      );
     }
+    const salt = await bcrypt.genSalt(10);
+    const hasedPassword = await bcrypt.hash(u_password, salt);
+
+    const u_otp = await this.generateOtp(100000, 999999);
+
+    const data: any = {
+      u_name,
+      u_email,
+      u_password: hasedPassword,
+      u_mobile,
+      u_ipaddress: ip,
+    };
+    let result = await this.insertRecord(data);
+
+    let wh1 = "where u_email ilike '" + u_email + "'";
+    let res2: any[] = await this.update(this.table, { u_otp: u_otp }, wh1);
+
+    await sendMail(
+      u_email,
+      "OTP for Registration",
+      `<p>Welcome !! Your OTP for verification is -</p>
+        <h1>${u_otp}</h1> `
+    );
+
+    return functionObj.output(
+      200,
+      1,
+      "Register success & otp send success",
+      result
+    );
   }
 
   //--------------------------------------- login  ------------------------------------------------
@@ -155,11 +134,11 @@ export class Userdb extends appdb {
   async verifyOtp(u_email: any, u_otp: number) {
     var functionObj = new functions();
 
-    let where1 = "where u_email ='" + u_email + "'";
+    this.where = "where u_email ='" + u_email + "'";
     let result = await this.select(
       this.table,
       "u_email,u_otp,u_updated_at",
-      where1,
+      this.where,
       this.orderby,
       this.limit
     );
@@ -186,15 +165,8 @@ export class Userdb extends appdb {
     let where2 = "where u_email ilike '" + u_email + "'";
     let response2: any[] = await this.update(
       this.table,
-      { u_otp: "null" },
+      { u_otp: null, u_otpstatus: "verified" },
       where2
-    );
-
-    let wh1 = "where u_email ilike '" + u_email + "'";
-    let res2: any[] = await this.update(
-      this.table,
-      { u_otpstatus: "verified" },
-      wh1
     );
 
     return functionObj.output(201, 1, "OTP verify success..");
@@ -219,18 +191,6 @@ export class Userdb extends appdb {
 
     return functionObj.output(200, 1, "OTP resend success...");
   }
-
-  //---------------------------------------- delete by id ------------------------------------------------
-
-  async deleteUsers(id: number) {
-    let functionObj = new functions();
-
-    let where1 = "where id =" + id;
-    let result: any[] = await this.delete(this.table, where1);
-
-    return functionObj.output(200, 1, "delete user success..", result);
-  }
-
   // ------------------------------------- frogot-password ---------------------------------------------
 
   async forgotPassword(u_email: any) {
@@ -238,8 +198,12 @@ export class Userdb extends appdb {
 
     const u_otp = await this.generateOtp(100000, 999999);
 
-    let wh1 = "where u_email ilike '" + u_email + "'";
-    let res2: any[] = await this.update(this.table, { u_otp: u_otp }, wh1);
+    this.where = "where u_email ilike '" + u_email + "'";
+    let res2: any[] = await this.update(
+      this.table,
+      { u_otp: u_otp },
+      this.where
+    );
 
     await sendMail(
       u_email,
@@ -252,18 +216,15 @@ export class Userdb extends appdb {
 
   // ------------------------------------- reset password -----------------------------------------------
 
-  async resetPassword(u_email: any, u_password: any) {
+  async resetPassword(id: number, u_password: any) {
     var functionObj = new functions();
 
     const salt = await bcrypt.genSalt(10);
     const hasedPassword = await bcrypt.hash(u_password, salt);
 
-    let where = "where u_email ilike '" + u_email + "'";
-    let result: any[] = await this.update(
-      this.table,
-      { u_password: hasedPassword },
-      where
-    );
+    let result: any[] = await this.updateRecord(id, {
+      u_password: hasedPassword,
+    });
 
     return functionObj.output(200, 1, "password changed success...", result);
   }
@@ -277,11 +238,9 @@ export class Userdb extends appdb {
     u_img: string
   ) {
     let functionObj = new functions();
-
-    let where1 = "where id =" + id;
     let datas = { u_name: u_name, u_mobile: u_mobile, u_img };
-    let result = await this.update(this.table, datas, where1);
+    let result = await this.updateRecord(id, datas);
 
-    return functionObj.output(200, 1, "Profile update Success...");
+    return functionObj.output(200, 1, "Profile update Success...", result);
   }
 }

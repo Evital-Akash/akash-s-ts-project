@@ -1,7 +1,8 @@
 import express from "express";
 import { Checkoutdb } from "../model/Checkout";
 import { AdminAuth, userAuth } from "../library/authentication";
-import { addressValidations } from "../library/validations";
+import { functions } from "../library/function";
+import Joi from "joi";
 
 const router = express.Router();
 
@@ -15,6 +16,31 @@ router.get("/getAlladdress", AdminAuth, getAllShippingAddress);
 router.delete("/deleteAddress/:id", userAuth, deleteShippingAddress);
 
 // ------------------ add shipping_address --------------------------------
+let functionObj = new functions();
+
+
+function addressValidations(req: any, res: any, next: any) {
+  const schema = Joi.object({
+    sh_address1: Joi.string().trim().replace(/'/g, "''").required(),
+    sh_address2: Joi.string().trim().replace(/'/g, "''").required(),
+    sh_city: Joi.string().replace(/'/g, "''").trim().required(),
+    sh_state: Joi.string().replace(/'/g, "''").trim().required(),
+    sh_country: Joi.string().replace(/'/g, "''").trim().required(),
+    sh_pincode: Joi.string()
+      .replace(/'/g, "''")
+      .pattern(/^\d{6}$/)
+      .required(),
+  });
+  const { error, value } = schema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ msg: error.details[0].message });
+  }
+  req.body = value;
+  next();
+}
+
+
+
 async function addShippingAddress(req: any, res: any) {
   try {
     const {
@@ -48,7 +74,7 @@ async function addShippingAddress(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -57,14 +83,10 @@ async function addShippingAddress(req: any, res: any) {
 async function getAllShippingAddress(req: any, res: any) {
   try {
     const checkoutObj = new Checkoutdb();
-    let result: any = await checkoutObj.getAllShippingAddress();
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    let result: any = await checkoutObj.allRecords();
+    return functionObj.output(201, 1, "get success", result);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -75,14 +97,10 @@ async function deleteShippingAddress(req: any, res: any) {
     const checkoutObj = new Checkoutdb();
     const id = req.params.id;
 
-    let result: any = await checkoutObj.deleteShippingAddress(id);
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    let result: any = await checkoutObj.deleteRecord(id);
+    return functionObj.output(200, 1, "delete success..", result);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 

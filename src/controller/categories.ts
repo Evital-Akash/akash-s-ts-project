@@ -1,6 +1,7 @@
 import express from "express";
 import { Categorydb } from "../model/Categories";
 import { AdminAuth } from "../library/authentication";
+import { functions } from "../library/function";
 
 const router = express.Router();
 
@@ -9,6 +10,7 @@ router.get("/getAllCategory", getAllCategories);
 router.delete("/deleteCategory/:id", AdminAuth, deleteCategory);
 
 // ---------------------- create categories -----------------------------------
+let functionObj = new functions();
 
 async function createCategory(req: any, res: any) {
   try {
@@ -23,7 +25,7 @@ async function createCategory(req: any, res: any) {
       data: result.data,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -32,15 +34,10 @@ async function createCategory(req: any, res: any) {
 async function getAllCategories(req: any, res: any) {
   try {
     const categoryObj = new Categorydb();
-    let result: any = await categoryObj.getAllCategories();
-
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    let result: any = await categoryObj.allRecords();
+    return functionObj.output(201, 1, "get success", result);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 
@@ -50,15 +47,10 @@ async function deleteCategory(req: any, res: any) {
   try {
     const categoryObj = new Categorydb();
     const id = req.params.id;
-    let result: any = await categoryObj.deleteCategory(id);
-
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    let result: any = await categoryObj.deleteRecord(id);
+    return functionObj.output(200, 1, "delete success..", result);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error...", error: error });
+    return functionObj.output(500, 0, "Internal server error", error);
   }
 }
 

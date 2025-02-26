@@ -108,20 +108,6 @@ export class Orderdb extends appdb {
     return functionObj.output(200, 1, "Order created successfully!", neworder);
   }
 
-  //   ----------------------- get all orders ----------------------------------------------
-
-  async getOrders() {
-    let functionObj = new functions();
-    let result1: any = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-    return functionObj.output(200, 1, "Get success...", result1);
-  }
-
   // ------------------------------ get all order items ---------------------------------
 
   async getAllOrderItems() {
@@ -143,6 +129,10 @@ export class Orderdb extends appdb {
     let wh2 = `where order_id=${id}`;
     let result1: any = await this.delete("order_items", wh2);
 
+    if (!result1) {
+      return functionObj.output(423, 0, "No items find in cart to orders..");
+    }
+
     let wh1 = `where id = ${id}`;
     let result2: any = await this.delete(this.table, wh1);
     return functionObj.output(200, 1, "order delete success...");
@@ -162,7 +152,6 @@ export class Orderdb extends appdb {
       this.limit
     );
 
-
     if (!result) {
       return functionObj.output(200, 1, "User Not found...");
     }
@@ -177,7 +166,6 @@ export class Orderdb extends appdb {
       orderby,
       this.limit
     );
-
 
     let productIdQry = await Promise.all(
       result2.map(async (order: any) => {

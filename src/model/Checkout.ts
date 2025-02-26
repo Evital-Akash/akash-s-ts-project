@@ -35,28 +35,4 @@ export class Checkoutdb extends appdb {
     let result: any = await this.insertRecord(data);
     return functionObj.output(200, 1, "Address added success...", result);
   }
-
-  //   ----------get all shipping address ----------------------------
-
-  async getAllShippingAddress() {
-    const functionObj = new functions();
-    let result: any[] = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-
-    return functionObj.output(200, 1, "Get success...", result);
-  }
-
-  //   ------------------ delete address by id ----------------------------
-
-  async deleteShippingAddress(id: number) {
-    const functionObj = new functions();
-    const where = "where id=" + id;
-    let result: any[] = await this.delete(this.table, where);
-    return functionObj.output(200, 1, "address deleted success...", result);
-  }
 }

@@ -23,7 +23,7 @@ export class Productdb extends appdb {
   ) {
     let functionObj = new functions();
 
-    this.where = `where p_name ilike '${p_name}'`;
+    this.where = `WHERE p_name ILIKE '${p_name}'`;
     let exist: any = await this.select(
       this.table,
       "*",
@@ -51,31 +51,6 @@ export class Productdb extends appdb {
 
     return functionObj.output(200, 1, "Product Added success...", result);
   }
-
-  //   ------------------------ get all products ---------------------------------------------
-
-  async getallProducts() {
-    let result: any = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-
-    var functionObj = new functions();
-    return functionObj.output(201, 1, "get success", result);
-  }
-
-  //   ----------------------------- delete products by id -------------------------------------
-
-  async deleteProducts(id: number) {
-    let functionObj = new functions();
-    let where = "where id = " + id;
-    let result: any[] = await this.delete(this.table, where);
-    return functionObj.output(200, 1, "delete products success..", result);
-  }
-
   //   ------------------------------ update products ------------------------------------------------
 
   async updateProducts(
@@ -98,21 +73,18 @@ export class Productdb extends appdb {
     };
     let result: any[] = await this.update(this.table, proData, where1);
 
-    return functionObj.output(200, 1, "Product details update Success...");
+    if (!result) {
+      return functionObj.output(422, 0, "not updated");
+    } else {
+      return functionObj.output(200, 1, "Product details update Success...");
+    }
   }
 
   //   ------------------------------search products --------------------------------------------------
 
   async searchProduct(searchValue: string) {
     let functionObj = new functions();
-
-    let where1 =
-      "where p_name ilike '" +
-      searchValue +
-      "' or " +
-      "p_desc ilike '" +
-      searchValue +
-      "'";
+    let where1 = `WHERE p_name ILIKE '${searchValue}' OR p_desc ILIKE '${searchValue}'`;
     let result: any = await this.select(
       this.table,
       "*",

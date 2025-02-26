@@ -26,27 +26,4 @@ export class Feedbackdb extends appdb {
     let result = await this.insertRecord(data);
     return functionObj.output(200, 1, "Feedback added success...", result);
   }
-
-  // ----------------------------- get all feedbacks ----------------------------
-  async getAllFeedbacks() {
-    let functionObj = new functions();
-    let result: any = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-
-    return functionObj.output(200, 1, "Get all feedbacks..", result);
-  }
-
-  // ------------------------ deleteFeedback by id -------------------------------
-
-  async deleteFeedback(id: number) {
-    let functionObj = new functions();
-    let where1 = "where id=" + id;
-    let result: any[] = await this.delete(this.table, where1);
-    return functionObj.output(200, 1, "Delete success..", result);
-  }
 }

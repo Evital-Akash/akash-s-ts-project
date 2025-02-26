@@ -3,7 +3,7 @@ import { functions } from "./function";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 export async function userAuth(req: any, res: any, next: any): Promise<any> {
-  let functionIbj = new functions();
+  let functionObj = new functions();
   try {
     const token = req.cookies.token;
 
@@ -25,7 +25,7 @@ export async function userAuth(req: any, res: any, next: any): Promise<any> {
         .json({ status_code: 0, status_message: "No Authorized Request" });
     }
   } catch (err) {
-    return functionIbj.output(500, 0, "INTERNAM ERROR IN AUTH MIDDLEWARE");
+    return functionObj.output(500, 0, "INTERNAM ERROR IN AUTH MIDDLEWARE");
   }
 }
 

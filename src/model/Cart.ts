@@ -9,7 +9,11 @@ export class Cartdb extends appdb {
 
   //    --------------------------- add to cart product --------------------------
 
-  async addTocart(product_id: number, cart_quantity: number, user_id: number) {
+  async addUpdateCart(
+    product_id: number,
+    cart_quantity: number,
+    user_id: number
+  ) {
     let functionObj = new functions();
 
     // check product qnt is available or not
@@ -44,7 +48,6 @@ export class Cartdb extends appdb {
       this.limit
     );
 
-
     if (existingCartItem.length > 0) {
       let updateQnt = existingCartItem[0].cart_quantity + cart_quantity;
 
@@ -63,28 +66,5 @@ export class Cartdb extends appdb {
     let data: any = { product_id, cart_quantity, user_id };
     let result = await this.insertRecord(data);
     return functionObj.output(200, 1, "Product Added success...", result);
-  }
-
-  //   --------------------------- get all cart products --------------------------
-
-  async getAllCartProducts() {
-    let functionObj = new functions();
-    let result1: any = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-    return functionObj.output(200, 1, "Get success...", result1);
-  }
-
-  //   ------------------------------- delete by id ----------------------------------
-
-  async removeCartItems(id: number) {
-    let functionObj = new functions();
-    let where1 = "where id=" + id;
-    let result: any = await this.delete(this.table, where1);
-    return functionObj.output(200, 1, "Delete cart success...", result);
   }
 }
