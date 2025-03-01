@@ -72,7 +72,7 @@ async function register(req: any, res: any, next: any) {
     if (result?.error) {
       return res.send(functionObj.output(0, result.message));
     }
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "REGISTER_SUCCESS", result.data));
   } catch (error) {
     next(error);
     return;
@@ -109,7 +109,7 @@ async function login(req: any, res: any, next: any) {
       sameSite: "strict",
       maxAge: 3600000,
     });
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "LOGIN_SUCCESS", result.data));
   } catch (error) {
     next(error);
     return;
@@ -137,7 +137,7 @@ async function checkUserByEmail(req: any, res: any, next: any) {
     if (result?.error) {
       return res.send(functionObj.output(0, result.message));
     }
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "USER_EXIST", result.data));
   } catch (error) {
     next(error);
     return;
@@ -153,7 +153,7 @@ async function getAllUsers(req: any, res: any, next: any) {
     if (result?.error) {
       return res.send(functionObj.output(0, result.message));
     }
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "GET_ALL_USER", result.data));
   } catch (error) {
     next(error);
     return;
@@ -170,7 +170,7 @@ async function verifyOtp(req: any, res: any, next: any) {
     if (result?.error) {
       return res.send(functionObj.output(0, result.message));
     }
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "OTP_VERIFY", result.data));
   } catch (error) {
     next(error);
     return;
@@ -239,7 +239,7 @@ async function forgotPassword(req: any, res: any, next: any) {
     if (result?.error) {
       return res.send(functionObj.output(0, result.message));
     }
-    return res.send(functionObj.output(1, result.message, result.data));
+    return res.send(functionObj.output(1, "OTP_SEND", result.data));
   } catch (error) {
     next(error);
     return;

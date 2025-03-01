@@ -118,13 +118,7 @@ export class Userdb extends appdb {
       const salt = await bcrypt.genSalt(10);
       const hasedPassword = await bcrypt.hash(u_password, salt);
       const u_otp = await this.generateOtp(100000, 999999);
-      const data: any = {
-        u_name,
-        u_email,
-        u_password: hasedPassword,
-        u_mobile,
-        u_ipaddress: ip,
-      };
+      const data: any = { u_name, u_email, u_password: hasedPassword, u_mobile, u_ipaddress: ip, };
       let result: any = await this.insertRecord(data);
 
       if (!result) {
