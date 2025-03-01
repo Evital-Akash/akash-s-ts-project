@@ -3,12 +3,13 @@ import { Feedbackdb } from "../model/Feedback";
 import { AdminAuth, userAuth } from "../library/authentication";
 import { functions } from "../library/function";
 import Joi from "joi";
+import { validations } from "../library/validations";
 
 const router = express.Router();
 
 router.post("/addFeedback", userAuth, addFeedbackValidations, addFeedback);
 router.get("/getAllFeedback", getAllFeedback);
-router.delete("/deleteFeedback/:id", AdminAuth, deleteFeedback);
+router.delete("/deleteFeedback", AdminAuth, deleteFeedback);
 
 let functionObj = new functions();
 
@@ -21,58 +22,66 @@ function addFeedbackValidations(req: any, res: any, next: any) {
     r_img: Joi.required(),
     product_id: Joi.number().greater(0).required(),
   });
-  const { error, value } = schema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ msg: error.details[0].message });
+  const validationObj = new validations();
+  if (!validationObj.validateRequest(req, res, next, schema)) {
+    return;
   }
-  req.body = value;
   next();
 }
 
 
-async function addFeedback(req: any, res: any) {
+async function addFeedback(req: any, res: any, next: any) {
   try {
     const { r_rating, r_comment, r_img, product_id } = req.body;
-
+    const u_id = res.locals.user;
     const feedbackObj = new Feedbackdb();
 
     let result: any = await feedbackObj.addFeedback(
       r_rating,
       r_comment,
       r_img,
-      product_id
+      product_id,
+      u_id
     );
-
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
-async function getAllFeedback(req: any, res: any) {
+// ----------------- get all feedbacks ---------------------------
+async function getAllFeedback(req: any, res: any, next: any) {
   try {
     const feedbackObj = new Feedbackdb();
-
-    let result: any = await feedbackObj.allRecords();
-    return functionObj.output(201, 1, "get success", result);
+    let result: any = await feedbackObj.getAllFeedback();
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
-async function deleteFeedback(req: any, res: any) {
-  try {
-    const id = req.params.id;
-    const feedbackObj = new Feedbackdb();
+// -------------------- delete feedbacks ----------------------------------
 
-    let result: any = await feedbackObj.deleteRecord(id);
-    return functionObj.output(200, 1, "delete success..", result);
+async function deleteFeedback(req: any, res: any, next: any) {
+  try {
+    const { id } = req.body;
+    const feedbackObj = new Feedbackdb();
+    let result: any = await feedbackObj.deleteFeedback(id);
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 export default router;

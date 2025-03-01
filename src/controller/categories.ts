@@ -7,50 +7,56 @@ const router = express.Router();
 
 router.post("/createCategory", AdminAuth, createCategory);
 router.get("/getAllCategory", getAllCategories);
-router.delete("/deleteCategory/:id", AdminAuth, deleteCategory);
+router.delete("/deleteCategory", AdminAuth, deleteCategory);
 
 // ---------------------- create categories -----------------------------------
 let functionObj = new functions();
 
-async function createCategory(req: any, res: any) {
+async function createCategory(req: any, res: any, next: any) {
   try {
     const categoryObj = new Categorydb();
     const { cat_name } = req.body;
-
     let result: any = await categoryObj.createCategories(cat_name);
-
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
 // ------------------- get all categories ---------------------------------------
 
-async function getAllCategories(req: any, res: any) {
+async function getAllCategories(req: any, res: any, next: any) {
   try {
     const categoryObj = new Categorydb();
-    let result: any = await categoryObj.allRecords();
-    return functionObj.output(201, 1, "get success", result);
+    let result: any = await categoryObj.getAllCategories();
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
 // -------------------------- delete category by id ---------------------------------
 
-async function deleteCategory(req: any, res: any) {
+async function deleteCategory(req: any, res: any, next: any) {
   try {
     const categoryObj = new Categorydb();
-    const id = req.params.id;
-    let result: any = await categoryObj.deleteRecord(id);
-    return functionObj.output(200, 1, "delete success..", result);
+    const { id } = req.body;
+    let result: any = await categoryObj.deleteCategory(id);
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 

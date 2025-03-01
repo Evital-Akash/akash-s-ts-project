@@ -3,12 +3,13 @@ import { Cartdb } from "../model/Cart";
 import { userAuth } from "../library/authentication";
 import { functions } from "../library/function";
 import Joi from "joi";
+import { validations } from "../library/validations";
 
 const router = express.Router();
 
 router.post("/addTocart", userAuth, addTocartValidation, addUpdateCart);
-router.get("/getAllcartProducts", getAllCartProducts);
-router.delete("/removeCartItems/:id", removeCartItems);
+router.get("/getAllcartProducts", userAuth, getAllCartProducts);
+router.delete("/removeCartItems", removeCartItems);
 
 // ----------------- add product to cart ------------------------------------------
 
@@ -19,57 +20,61 @@ function addTocartValidation(req: any, res: any, next: any) {
     product_id: Joi.number().greater(0).required(),
     cart_quantity: Joi.number().greater(0).required(),
   });
-  const { error, value } = schema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ msg: error.details[0].message });
+  const validationObj = new validations();
+  if (!validationObj.validateRequest(req, res, next, schema)) {
+    return;
   }
-  req.body = value;
   next();
 }
-async function addUpdateCart(req: any, res: any) {
+
+async function addUpdateCart(req: any, res: any, next: any) {
   try {
     const Cartobj = new Cartdb();
     const token = res.locals.user;
     const { product_id, cart_quantity } = req.body;
-
-    let result: any = await Cartobj.addUpdateCart(
-      product_id,
-      cart_quantity,
-      token
-    );
-    return res.status(result.status_code).json({
-      status: result.status,
-      message: result.status_message,
-      data: result.data,
-    });
+    let result: any = await Cartobj.addUpdateCart(product_id, cart_quantity, token);
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
 // ---------------------- get all cart products --------------------------------
 
-async function getAllCartProducts(req: any, res: any) {
+async function getAllCartProducts(req: any, res: any, next: any) {
   try {
+    const user_id = res.locals.user;
+    console.log("u-id", user_id);
     const Cartobj = new Cartdb();
-    let result: any = await Cartobj.allRecords();
-    return functionObj.output(201, 1, "get success", result);
+    let result: any = await Cartobj.getAllCartProducts(user_id);
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 
 // ----------------------remove cart items ----------------------------------
 
-async function removeCartItems(req: any, res: any) {
+async function removeCartItems(req: any, res: any, next: any) {
   try {
     const Cartobj = new Cartdb();
-    const id = req.params.id;
-
-    let result: any = await Cartobj.deleteRecord(id);
-    return functionObj.output(200, 1, "delete success..", result);
+    const { id } = req.body;
+    let result: any = await Cartobj.removeCartItems(id);
+    if (result?.error) {
+      return res.send(functionObj.output(0, result.message));
+    }
+    return res.send(functionObj.output(1, result.message, result.data));
   } catch (error) {
-    return functionObj.output(500, 0, "Internal server error", error);
+    next(error);
+    return;
   }
 }
 

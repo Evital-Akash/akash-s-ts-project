@@ -1,5 +1,6 @@
 import { appdb } from "./appdb";
 import { functions } from "../library/function";
+import { Productdb } from "./Products";
 
 export class Cartdb extends appdb {
   constructor() {
@@ -9,62 +10,104 @@ export class Cartdb extends appdb {
 
   //    --------------------------- add to cart product --------------------------
 
-  async addUpdateCart(
-    product_id: number,
-    cart_quantity: number,
-    user_id: number
-  ) {
-    let functionObj = new functions();
-
-    // check product qnt is available or not
-
-    let where1 = `where id = ${product_id}`;
-    let result1: any = await this.select(
-      "products",
-      "p_qnt",
-      where1,
-      this.orderby,
-      this.limit
-    );
-
-    if (result1.length === 0 || !result1) {
-      return functionObj.output(422, 0, "products not found..");
+  async addUpdateCart(product_id: number, cart_quantity: number, user_id: number) {
+    let return_data = {
+      error: true,
+      message: "",
+      data: {}
     }
+    try {
+      let productObj = new Productdb()
+      productObj.where = `where id = ${product_id}`;
+      let result1: any = await productObj.selectRecord(product_id, "p_qnt",);
+      console.log(result1);
 
-    const availStock: number = result1[0].p_qnt;
+      if (result1.length === 0 || !result1) {
+        return_data.message = "PRODUCTS NOT FOUND..";
+        return return_data;
+      }
+      const availStock: number = result1[0].p_qnt;
 
-    if (availStock < cart_quantity) {
-      return functionObj.output(423, 0, "Insufficient stock..");
+      if (availStock < cart_quantity) {
+        return_data.message = "INSUFFICIENT STOCKS...";
+        return return_data;
+      }
+
+      //  check if product already exist in cart
+
+      this.where = `where user_id = ${user_id} and product_id = ${product_id}`;
+      let existingCartItem: any = await this.select(this.table, "cart_quantity", this.where, this.orderby, this.limit);
+
+      if (existingCartItem.length > 0) {
+        let updateQnt = existingCartItem[0].cart_quantity + cart_quantity;
+
+        this.where = `where user_id = ${user_id} and product_id = ${product_id}`;
+        await this.update(this.table, { cart_quantity: updateQnt, }, this.where);
+        return_data.message = "QTY UPDATED SUCCESS..";
+        return return_data;
+      }
+
+      let data: any = { product_id, cart_quantity, user_id };
+      let result = await this.insertRecord(data);
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "INSERTED SUCCES...";
     }
-
-    //  check if product already exist in cart
-
-    let where2 = `where user_id = ${user_id} and product_id = ${product_id}`;
-    let existingCartItem: any = await this.select(
-      this.table,
-      "cart_quantity",
-      where2,
-      this.orderby,
-      this.limit
-    );
-
-    if (existingCartItem.length > 0) {
-      let updateQnt = existingCartItem[0].cart_quantity + cart_quantity;
-
-      let wh3 = `where user_id = ${user_id} and product_id = ${product_id}`;
-      let res2: any = await this.update(
-        this.table,
-        {
-          cart_quantity: updateQnt,
-        },
-        wh3
-      );
-
-      return functionObj.output(200, 1, "quantity updated success...", res2);
+    catch (error) {
+      console.error("Error in add cart products:", error);
+      return_data.message = "Error in add cart products"
     }
+    return return_data;
 
-    let data: any = { product_id, cart_quantity, user_id };
-    let result = await this.insertRecord(data);
-    return functionObj.output(200, 1, "Product Added success...", result);
+  }
+
+  // -------------------- get all cart products -----------------------------------------
+
+  async getAllCartProducts(user_id: number) {
+    let return_data = {
+      error: true,
+      message: "",
+      data: { result: new Array() }
+    }
+    try {
+      this.where = `where user_id = ${user_id}`;
+      let result: any = await this.select(this.table, "*", this.where, this.orderby, this.limit);
+      if (!result || result.length === 0) {
+        return_data.message = "CART NOT FOUND.."
+        return return_data;
+      }
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "CART GET SUCCESS.."
+
+    } catch (error) {
+      console.error("Error in get cart products:", error);
+      return_data.message = "Error in get cart products"
+    }
+    return return_data;
+  }
+
+  // -------------------------- remove cart item by id ------------------------------
+  async removeCartItems(id: number) {
+    let return_data = {
+      error: true,
+      message: "",
+      data: { result: new Array() }
+    }
+    try {
+      let result: any = await this.deleteRecord(id);
+      if (!result || result.length === 0) {
+        return_data.message = "CART NOT FOUND.."
+        return return_data;
+      }
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "CART DELETE SUCCESS.."
+
+    } catch (error) {
+      console.error("Error in delete cart products:", error);
+      return_data.message = "Error in delete cart products"
+    }
+    return return_data;
   }
 }

@@ -9,25 +9,84 @@ export class Categorydb extends appdb {
 
   //   ----------------- create categories ----------------------------
   async createCategories(cat_name: string) {
-    let functionObj = new functions();
-    this.where = "where cat_name ilike'" + cat_name + "'";
-    let exist: any[] = await this.select(
-      this.table,
-      "*",
-      this.where,
-      this.orderby,
-      this.limit
-    );
-
-    if (exist.length) {
-      return functionObj.output(402, 0, "category is already exist..");
+    let return_data = {
+      error: true,
+      message: "",
+      data: {}
     }
     try {
+      this.where = "where cat_name ilike'" + cat_name + "'";
+      let exist: any[] = await this.select(this.table, "*", this.where, this.orderby, this.limit);
+
+      if (exist.length) {
+        return_data.message = "CATEGORY ALREADY EXIST..";
+        return return_data;
+      }
+
       let data: any = { cat_name };
       let result = await this.insertRecord(data);
-      return functionObj.output(200, 1, "category Added success...", result);
+      if (!result || result.length === 0) {
+        return_data.message = "CATEGORY NOT FOUND.."
+        return return_data;
+      }
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "CATEGORY INSERTED SUCCESS.."
+
     } catch (error) {
-      return functionObj.output(400, 0, "not inserted data..", error);
+      console.error("Error in add category:", error);
+      return_data.message = "Error in add category"
     }
+    return return_data;
+  }
+
+
+  // ----------------- get all categories ------------------------------
+  async getAllCategories() {
+    let return_data = {
+      error: true,
+      message: "",
+      data: { result: new Array() }
+    }
+    try {
+      let result: any = await this.allRecords("*");
+      if (!result || result.length === 0) {
+        return_data.message = "CATEGORY NOT FOUND.."
+        return return_data;
+      }
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "CATEGORY GET SUCCESS.."
+    }
+    catch (error) {
+      console.error("Error in GET category:", error);
+      return_data.message = "Error in GET category"
+    }
+    return return_data;
+  }
+
+  // ----------------- delete categories ------------------------------
+
+  async deleteCategory(id: number) {
+    let return_data = {
+      error: true,
+      message: "",
+      data: {}
+    }
+    try {
+      let result: any = await this.deleteRecord(id);
+      if (!result || result.length === 0) {
+        return_data.message = "CATEGORY NOT FOUND.."
+        return return_data;
+      }
+      return_data.error = false;
+      return_data.data = result;
+      return_data.message = "CATEGORY DELETE SUCCESS.."
+    } catch (error) {
+      console.error("Error in delete category:", error);
+      return_data.message = "Error in delete category"
+    }
+    return return_data;
+
   }
 }
