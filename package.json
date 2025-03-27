@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon src/server.ts",
+    "start": "nodemon src/app.ts",
     "build": "tsc",
-    "dev": "ts-node src/server.ts"
+    "dev": "ts-node src/app.ts"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +31,7 @@
     "nodemailer": "^6.10.0",
     "nodemon": "^3.1.9",
     "pg": "^8.13.3",
+    "stripe": "^17.7.0",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
