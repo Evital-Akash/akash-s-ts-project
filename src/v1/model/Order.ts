@@ -192,16 +192,6 @@ export class Orderdb extends appdb {
 
         let orderId = newOrder;
         let OrderItemsObj = new OrderItemsdb();
-        // for (let item of cartItems) {
-        //   await OrderItemsObj.insertRecord({
-        //     order_id: orderId,
-        //     product_id: item.product_id,
-        //     oi_quantity: item.cart_quantity,
-        //     oi_price: item.p_price,
-        //     oi_total: item.p_price * item.cart_quantity,
-        //     oi_ipaddress: ip
-        //   })
-        // }
         for (let item of cartItems) {
           try {
             await OrderItemsObj.insertRecord({
